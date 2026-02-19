@@ -19,6 +19,6 @@ Works entirely with local git — no GitHub CLI or PR required.
 
 ## Output
 
-Writes a Markdown report to `reviews/<branch>_<timestamp>.md` at the repo root. Creates the `reviews/` directory if it doesn't exist.
+Writes a Markdown report to `.reviews/<branch>_<timestamp>.md` at the repo root. Creates the `.reviews/` directory if it doesn't exist. Make sure it is included in the .gitignore so we don't accidentally commit a review.
 
 Each issue is scored 0–100 for confidence. Only issues scoring ≥ 75 are included.
