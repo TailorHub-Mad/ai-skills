@@ -1,0 +1,25 @@
+{
+  "name": "@tailorhub/skills",
+  "version": "1.0.0",
+  "description": "Install Claude Code skills from TailorHub's shared skill library",
+  "type": "module",
+  "bin": {
+    "skills": "cli/index.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "claude",
+    "claude-code",
+    "skills",
+    "tailorhub",
+    "ai"
+  ],
+  "author": "TailorHub-Mad",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/TailorHub-Mad/ai-skills.git"
+  }
+}
