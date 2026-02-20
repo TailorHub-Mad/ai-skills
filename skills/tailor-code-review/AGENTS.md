@@ -113,15 +113,15 @@ Sanitise the branch name for use in a filename by replacing `/` and any non-alph
 
 The output file path is:
 ```
-<repo-root>/reviews/<sanitised-branch>_<timestamp>.md
+<repo-root>/.reviews/<sanitised-branch>_<timestamp>.md
 ```
 
 For example, a branch named `feat/auth-refactor` reviewed at 1:45 PM on February 19 2026 becomes:
 ```
-reviews/feat-auth-refactor_February-19-2026-at-1.45-PM.md
+.reviews/feat-auth-refactor_February-19-2026-at-1.45-PM.md
 ```
 
-Create the `reviews/` directory at the repo root if it does not already exist.
+Create the `.reviews/` directory at the repo root if it does not already exist.
 
 ### Write the file
 
@@ -198,7 +198,7 @@ Description of the issue and why it matters.
 
 After writing the file, tell the user:
 ```
-Review saved to reviews/<filename>.md
+Review saved to .reviews/<filename>.md
 ```
 
 Categories: `BUG`, `SECURITY`, `CRITICAL`, `GUIDELINE`
