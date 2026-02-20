@@ -8,6 +8,12 @@ Follow these steps precisely:
 
 Run `git rev-parse --is-inside-work-tree` to confirm we are inside a git repository. If not, stop and inform the user.
 
+Get the current branch name with `git rev-parse --abbrev-ref HEAD`. Check whether it matches any of the common base branch names: `main`, `master`, or `develop`. If it does, stop immediately and tell the user:
+
+> You are currently on `<branch-name>`, which is a base branch. `tailor-code-review` compares your current branch against the base — running it on the base branch itself produces no meaningful diff. Please switch to a feature branch and try again.
+
+Do not proceed further if the current branch is a base branch.
+
 Determine the base branch by checking (in order):
 1. `git show-branch -a 2>/dev/null | grep '\*' | grep -v "$(git rev-parse --abbrev-ref HEAD)" | head -1` to detect common ancestor
 2. Try `git rev-parse --verify main`, then `master`, then `develop` to find the first that exists
