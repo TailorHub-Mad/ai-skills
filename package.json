@@ -1,7 +1,12 @@
 {
   "name": "@tailorhub/skills",
-  "version": "1.2.1",
-  "description": "Install TailorHub skills for Claude Code and Codex",
+<<<<<<< HEAD
+  "version": "1.2.2",
+  "description": "Install Claude Code skills from TailorHub's shared skill library",
+=======
+  "version": "1.2.2",
+  "description": "Install Claude Code skills from TailorHub's shared skill library",
+>>>>>>> 907114d (1.2.2)
   "type": "module",
   "bin": {
     "skills": "cli/index.js"
