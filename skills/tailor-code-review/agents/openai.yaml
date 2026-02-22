@@ -1,0 +1,4 @@
+interface:
+  display_name: Tailor Code Review
+  short_description: Review the current git branch for bugs, security, and critical issues.
+  default_prompt: Run a code review on the current git branch against its base branch and save the markdown report under .reviews/.
