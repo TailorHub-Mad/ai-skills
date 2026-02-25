@@ -1,0 +1,4 @@
+interface:
+  display_name: Tailor Mermaid to Draw.io
+  short_description: Convert Mermaid to polished Draw.io cloud architecture diagrams.
+  default_prompt: Transform this Mermaid diagram into a professional Draw.io XML diagram using Azure or AWS icons, enterprise containers, and clean labeled flows.
