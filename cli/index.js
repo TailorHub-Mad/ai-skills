@@ -6,7 +6,7 @@ import path from 'path';
 import os from 'os';
 import readline from 'readline';
 
-const VALID_TARGETS = new Set(['claude', 'codex', 'both']);
+const VALID_TARGETS = new Set(['claude', 'codex', 'opencode', 'all']);
 const TARGET_CONFIG = {
   claude: {
     label: 'Claude Code',
@@ -16,41 +16,45 @@ const TARGET_CONFIG = {
     label: 'Codex',
     skillsRoot: path.join(os.homedir(), '.codex', 'skills'),
   },
+  opencode: {
+    label: 'OpenCode',
+    skillsRoot: path.join(os.homedir(), '.config', 'opencode', 'skills'),
+  },
 };
 
 function printUsage() {
   console.error('Usage:');
-  console.error('  npx @tailorhub/skills                                               (interactive)');
-  console.error('  npx @tailorhub/skills add <github-skill-url> [--target claude|codex|both]');
-  console.error('  npx @tailorhub/skills update [skill-name] [--target claude|codex|both]');
-  console.error('  npx @tailorhub/skills remove <skill-name> [--target claude|codex|both]');
+  console.error('  npx @tailorhub/skills                                                        (interactive)');
+  console.error('  npx @tailorhub/skills add <github-skill-url> [--target claude|codex|opencode|all]');
+  console.error('  npx @tailorhub/skills update [skill-name] [--target claude|codex|opencode|all]');
+  console.error('  npx @tailorhub/skills remove <skill-name> [--target claude|codex|opencode|all]');
   console.error('');
   console.error('Defaults:');
-  console.error('  --target both (installs/updates Claude Code and Codex)');
+  console.error('  --target all (installs/updates Claude Code, Codex, and OpenCode)');
   console.error('');
   console.error('Examples:');
   console.error('  npx @tailorhub/skills');
   console.error('  npx @tailorhub/skills add https://github.com/TailorHub-Mad/ai-skills/tailor-code-review');
-  console.error('  npx @tailorhub/skills add https://github.com/TailorHub-Mad/ai-skills/tailor-mermaid-to-drawio --target codex');
+  console.error('  npx @tailorhub/skills add https://github.com/TailorHub-Mad/ai-skills/tailor-code-review --target opencode');
   console.error('  npx @tailorhub/skills update');
   console.error('  npx @tailorhub/skills update tailor-code-review --target claude');
-  console.error('  npx @tailorhub/skills remove tailor-code-review --target both');
+  console.error('  npx @tailorhub/skills remove tailor-code-review --target all');
 }
 
 function parseCliArgs(argv) {
   const args = [...argv];
   const positionals = [];
-  let target = 'both';
+  let target = 'all';
 
   for (let i = 0; i < args.length; i += 1) {
     const token = args[i];
     if (token === '--target') {
       const value = args[i + 1];
       if (!value || value.startsWith('-')) {
-        throw new Error('Missing value for --target. Use claude, codex, or both.');
+        throw new Error('Missing value for --target. Use claude, codex, opencode, or all.');
       }
       if (!VALID_TARGETS.has(value)) {
-        throw new Error(`Invalid --target value "${value}". Use claude, codex, or both.`);
+        throw new Error(`Invalid --target value "${value}". Use claude, codex, opencode, or all.`);
       }
       target = value;
       i += 1;
@@ -69,7 +73,7 @@ function parseCliArgs(argv) {
 }
 
 function resolveTargets(target) {
-  if (target === 'both') return ['claude', 'codex'];
+  if (target === 'all' || target === 'both') return Object.keys(TARGET_CONFIG);
   return [target];
 }
 
@@ -249,15 +253,8 @@ function collectRestartTargets(results) {
 
 function printRestartHint(targets) {
   if (targets.length === 0) return;
-  if (targets.length === 2) {
-    console.log('Restart Claude Code and Codex to apply changes.');
-    return;
-  }
-  if (targets[0] === 'claude') {
-    console.log('Restart Claude Code to apply changes.');
-    return;
-  }
-  console.log('Restart Codex to apply changes.');
+  const labels = targets.map((t) => TARGET_CONFIG[t].label);
+  console.log(`Restart ${labels.join(' and ')} to apply changes.`);
 }
 
 function summarizeTargetResults(results) {
@@ -522,12 +519,12 @@ async function runInteractiveMode() {
     }
   }
 
-  const targetInput = await rlPrompt(rl, `Select target (claude/codex/both) [both]: `);
+  const targetInput = await rlPrompt(rl, `Select target (claude/codex/opencode/all) [all]: `);
   rl.close();
 
-  const target = targetInput.trim() || 'both';
+  const target = targetInput.trim() || 'all';
   if (!VALID_TARGETS.has(target)) {
-    console.error(`Invalid target "${target}". Use claude, codex, or both.`);
+    console.error(`Invalid target "${target}". Use claude, codex, opencode, or all.`);
     process.exit(1);
   }
 
