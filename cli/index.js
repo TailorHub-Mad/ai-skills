@@ -4,6 +4,7 @@ import https from 'https';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import readline from 'readline';
 
 const VALID_TARGETS = new Set(['claude', 'codex', 'both']);
 const TARGET_CONFIG = {
@@ -19,6 +20,7 @@ const TARGET_CONFIG = {
 
 function printUsage() {
   console.error('Usage:');
+  console.error('  npx @tailorhub/skills                                               (interactive)');
   console.error('  npx @tailorhub/skills add <github-skill-url> [--target claude|codex|both]');
   console.error('  npx @tailorhub/skills update [skill-name] [--target claude|codex|both]');
   console.error('  npx @tailorhub/skills remove <skill-name> [--target claude|codex|both]');
@@ -27,6 +29,7 @@ function printUsage() {
   console.error('  --target both (installs/updates Claude Code and Codex)');
   console.error('');
   console.error('Examples:');
+  console.error('  npx @tailorhub/skills');
   console.error('  npx @tailorhub/skills add https://github.com/TailorHub-Mad/ai-skills/tailor-code-review');
   console.error('  npx @tailorhub/skills add https://github.com/TailorHub-Mad/ai-skills/tailor-mermaid-to-drawio --target codex');
   console.error('  npx @tailorhub/skills update');
@@ -440,6 +443,103 @@ async function updateAllSkillsMultiTarget({ target }) {
   return true;
 }
 
+const SKILLS_REPO = { owner: 'TailorHub-Mad', repo: 'ai-skills' };
+
+function rlPrompt(rl, question) {
+  return new Promise((resolve) => rl.question(question, resolve));
+}
+
+async function fetchAvailableSkills() {
+  const contents = await fetchGithubContents(SKILLS_REPO.owner, SKILLS_REPO.repo, 'skills');
+  return contents.filter((e) => e.type === 'dir').map((e) => e.name);
+}
+
+async function fetchSkillDescription(skillName) {
+  try {
+    const contents = await fetchGithubContents(SKILLS_REPO.owner, SKILLS_REPO.repo, `skills/${skillName}/agents`);
+    const yamlFile = contents.find((e) => e.name.endsWith('.yaml') || e.name.endsWith('.yml'));
+    if (!yamlFile) return null;
+    const data = await httpsGet(yamlFile.download_url);
+    const match = data.toString().match(/short_description:\s*["']?(.+?)["']?\s*$/m);
+    return match ? match[1].trim() : null;
+  } catch {
+    return null;
+  }
+}
+
+function parseSelection(input, total) {
+  if (input.trim().toLowerCase() === 'all') {
+    return Array.from({ length: total }, (_, i) => i);
+  }
+  return input
+    .split(',')
+    .map((s) => parseInt(s.trim(), 10) - 1)
+    .filter((i) => Number.isInteger(i) && i >= 0 && i < total);
+}
+
+async function runInteractiveMode() {
+  if (!process.stdin.isTTY) {
+    printUsage();
+    process.exit(1);
+  }
+
+  console.log('\nWelcome to TailorHub Skills!\n');
+  process.stdout.write('Fetching available skills...');
+
+  let skills;
+  try {
+    skills = await fetchAvailableSkills();
+  } catch (err) {
+    process.stdout.write('\n');
+    console.error(`Error fetching skills: ${err.message}`);
+    process.exit(1);
+  }
+
+  const descriptions = await Promise.all(skills.map(fetchSkillDescription));
+  process.stdout.write('\n\n');
+
+  if (skills.length === 0) {
+    console.log('No skills available.');
+    return;
+  }
+
+  console.log('Available skills:');
+  const nameWidth = Math.max(...skills.map((s) => s.length));
+  skills.forEach((name, i) => {
+    const desc = descriptions[i] ? `  ${descriptions[i]}` : '';
+    console.log(`  ${String(i + 1).padStart(2)}. ${name.padEnd(nameWidth)}${desc}`);
+  });
+  console.log('');
+
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+
+  let selectedIndices = [];
+  while (selectedIndices.length === 0) {
+    const selInput = await rlPrompt(rl, `Select skills to install (e.g. 1  or  1,2  or  all): `);
+    selectedIndices = parseSelection(selInput, skills.length);
+    if (selectedIndices.length === 0) {
+      console.log('  No valid selection, try again.');
+    }
+  }
+
+  const targetInput = await rlPrompt(rl, `Select target (claude/codex/both) [both]: `);
+  rl.close();
+
+  const target = targetInput.trim() || 'both';
+  if (!VALID_TARGETS.has(target)) {
+    console.error(`Invalid target "${target}". Use claude, codex, or both.`);
+    process.exit(1);
+  }
+
+  console.log('');
+  const baseUrl = `https://github.com/${SKILLS_REPO.owner}/${SKILLS_REPO.repo}`;
+
+  for (const i of selectedIndices) {
+    const ok = await addSkillMultiTarget({ sourceUrl: `${baseUrl}/${skills[i]}`, target });
+    if (!ok) process.exit(1);
+  }
+}
+
 async function main() {
   let parsed;
   try {
@@ -452,7 +552,12 @@ async function main() {
 
   const { command, arg, positionals, target } = parsed;
 
-  if (!command || !['add', 'update', 'remove'].includes(command)) {
+  if (!command) {
+    await runInteractiveMode();
+    return;
+  }
+
+  if (!['add', 'update', 'remove'].includes(command)) {
     printUsage();
     process.exit(1);
   }
