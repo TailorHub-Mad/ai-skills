@@ -1,0 +1,4 @@
+interface:
+  display_name: Grill Me
+  short_description: Interview me relentlessly about every aspect of a plan or design until we reach shared understanding.
+  default_prompt: Grill me on this plan. Map the decision tree and walk me through every branch, one question at a time, until we reach a shared understanding.
