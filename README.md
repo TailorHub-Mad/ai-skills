@@ -98,3 +98,4 @@ When using `--target both` (or no `--target`), one target may fail while the oth
 |-------|-------------|
 | `tailor-code-review` | Agnostic code review for the current git branch. Detects bugs, security vulnerabilities, and critical issues. |
 | `tailor-mermaid-to-drawio` | Converts Mermaid architecture diagrams into polished Draw.io XML using Azure/AWS icon libraries and enterprise layout conventions. |
+| `grill-me` | Structured interview mode that walks every branch of a technical decision tree until reaching shared understanding. |
