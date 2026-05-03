@@ -1,67 +1,91 @@
 #!/usr/bin/env node
 
-import https from 'https';
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
-import readline from 'readline';
+import https from "https";
+import fs from "fs";
+import path from "path";
+import os from "os";
+import readline from "readline";
 
-const VALID_TARGETS = new Set(['claude', 'codex', 'opencode', 'all']);
+const VALID_TARGETS = new Set(["claude", "codex", "opencode", "all"]);
+const AUTO_ROUTER_PARENT_SKILL = "tailor-code-review";
+const AUTO_ROUTER_SKILL = "code-review-router";
 const TARGET_CONFIG = {
   claude: {
-    label: 'Claude Code',
-    skillsRoot: path.join(os.homedir(), '.claude', 'skills'),
+    label: "Claude Code",
+    skillsRoot: path.join(os.homedir(), ".claude", "skills"),
   },
   codex: {
-    label: 'Codex',
-    skillsRoot: path.join(os.homedir(), '.codex', 'skills'),
+    label: "Codex",
+    skillsRoot: path.join(os.homedir(), ".codex", "skills"),
   },
   opencode: {
-    label: 'OpenCode',
-    skillsRoot: path.join(os.homedir(), '.config', 'opencode', 'skills'),
+    label: "OpenCode",
+    skillsRoot: path.join(os.homedir(), ".config", "opencode", "skills"),
   },
 };
 
 function printUsage() {
-  console.error('Usage:');
-  console.error('  npx @tailorhub/skills                                                        (interactive)');
-  console.error('  npx @tailorhub/skills add <github-skill-url> [--target claude|codex|opencode|all]');
-  console.error('  npx @tailorhub/skills update [skill-name] [--target claude|codex|opencode|all]');
-  console.error('  npx @tailorhub/skills remove <skill-name> [--target claude|codex|opencode|all]');
-  console.error('');
-  console.error('Defaults:');
-  console.error('  --target all (installs/updates Claude Code, Codex, and OpenCode)');
-  console.error('');
-  console.error('Examples:');
-  console.error('  npx @tailorhub/skills');
-  console.error('  npx @tailorhub/skills add https://github.com/TailorHub-Mad/ai-skills/tailor-code-review');
-  console.error('  npx @tailorhub/skills add https://github.com/TailorHub-Mad/ai-skills/tailor-code-review --target opencode');
-  console.error('  npx @tailorhub/skills update');
-  console.error('  npx @tailorhub/skills update tailor-code-review --target claude');
-  console.error('  npx @tailorhub/skills remove tailor-code-review --target all');
+  console.error("Usage:");
+  console.error(
+    "  npx @tailorhub/skills                                                        (interactive)",
+  );
+  console.error(
+    "  npx @tailorhub/skills add <github-skill-url> [--target claude|codex|opencode|all]",
+  );
+  console.error(
+    "  npx @tailorhub/skills update [skill-name] [--target claude|codex|opencode|all]",
+  );
+  console.error(
+    "  npx @tailorhub/skills remove <skill-name> [--target claude|codex|opencode|all]",
+  );
+  console.error("");
+  console.error("Defaults:");
+  console.error(
+    "  --target all (installs/updates Claude Code, Codex, and OpenCode)",
+  );
+  console.error("");
+  console.error("Examples:");
+  console.error("  npx @tailorhub/skills");
+  console.error(
+    "  npx @tailorhub/skills add https://github.com/TailorHub-Mad/ai-skills/tailor-code-review",
+  );
+  console.error(
+    "  npx @tailorhub/skills add https://github.com/TailorHub-Mad/ai-skills/tailor-code-review --target opencode",
+  );
+  console.error("  npx @tailorhub/skills update");
+  console.error(
+    "  npx @tailorhub/skills update tailor-code-review --target claude",
+  );
+  console.error(
+    "  npx @tailorhub/skills remove tailor-code-review --target all",
+  );
 }
 
 function parseCliArgs(argv) {
   const args = [...argv];
   const positionals = [];
-  let target = 'all';
+  let target = "all";
 
   for (let i = 0; i < args.length; i += 1) {
     const token = args[i];
-    if (token === '--target') {
+    if (token === "--target") {
       const value = args[i + 1];
-      if (!value || value.startsWith('-')) {
-        throw new Error('Missing value for --target. Use claude, codex, opencode, or all.');
+      if (!value || value.startsWith("-")) {
+        throw new Error(
+          "Missing value for --target. Use claude, codex, opencode, or all.",
+        );
       }
       if (!VALID_TARGETS.has(value)) {
-        throw new Error(`Invalid --target value "${value}". Use claude, codex, opencode, or all.`);
+        throw new Error(
+          `Invalid --target value "${value}". Use claude, codex, opencode, or all.`,
+        );
       }
       target = value;
       i += 1;
       continue;
     }
 
-    if (token.startsWith('--')) {
+    if (token.startsWith("--")) {
       throw new Error(`Unknown flag: ${token}`);
     }
 
@@ -73,19 +97,21 @@ function parseCliArgs(argv) {
 }
 
 function resolveTargets(target) {
-  if (target === 'all' || target === 'both') return Object.keys(TARGET_CONFIG);
+  if (target === "all" || target === "both") return Object.keys(TARGET_CONFIG);
   return [target];
 }
 
 function parseSkillUrl(url) {
   const parsed = new URL(url);
-  const segments = parsed.pathname.split('/').filter(Boolean);
+  const segments = parsed.pathname.split("/").filter(Boolean);
   // segments: ['owner', 'repo', 'skill']
   if (segments.length < 3) {
-    throw new Error('Invalid skill URL. Expected format: https://github.com/<owner>/<repo>/<skill>');
+    throw new Error(
+      "Invalid skill URL. Expected format: https://github.com/<owner>/<repo>/<skill>",
+    );
   }
   const [owner, repo, ...rest] = segments;
-  const skill = rest.join('/');
+  const skill = rest.join("/");
   return { owner, repo, skill };
 }
 
@@ -96,7 +122,10 @@ function getSkillInstallDir(target, skillName) {
   const rootPrefix = `${resolvedRoot}${path.sep}`;
 
   // A skill name must resolve to a child directory, never the skills root itself.
-  if (resolvedSkillDir === resolvedRoot || !resolvedSkillDir.startsWith(rootPrefix)) {
+  if (
+    resolvedSkillDir === resolvedRoot ||
+    !resolvedSkillDir.startsWith(rootPrefix)
+  ) {
     throw new Error(`Invalid skill name "${skillName}"`);
   }
 
@@ -105,20 +134,26 @@ function getSkillInstallDir(target, skillName) {
 
 function httpsGet(url) {
   return new Promise((resolve, reject) => {
-    https.get(url, { headers: { 'User-Agent': '@tailorhub/skills-cli' } }, (res) => {
-      if (res.statusCode === 301 || res.statusCode === 302) {
-        return resolve(httpsGet(res.headers.location));
-      }
-      if (res.statusCode !== 200) {
-        reject(new Error(`HTTP ${res.statusCode} for ${url}`));
-        res.resume();
-        return;
-      }
-      const chunks = [];
-      res.on('data', (chunk) => chunks.push(chunk));
-      res.on('end', () => resolve(Buffer.concat(chunks)));
-      res.on('error', reject);
-    }).on('error', reject);
+    https
+      .get(
+        url,
+        { headers: { "User-Agent": "@tailorhub/skills-cli" } },
+        (res) => {
+          if (res.statusCode === 301 || res.statusCode === 302) {
+            return resolve(httpsGet(res.headers.location));
+          }
+          if (res.statusCode !== 200) {
+            reject(new Error(`HTTP ${res.statusCode} for ${url}`));
+            res.resume();
+            return;
+          }
+          const chunks = [];
+          res.on("data", (chunk) => chunks.push(chunk));
+          res.on("end", () => resolve(Buffer.concat(chunks)));
+          res.on("error", reject);
+        },
+      )
+      .on("error", reject);
   });
 }
 
@@ -130,37 +165,55 @@ async function downloadFile(downloadUrl, destPath) {
 
 async function fetchGithubContents(owner, repo, repoPath) {
   const encodedPath = repoPath
-    .split('/')
+    .split("/")
     .map((part) => encodeURIComponent(part))
-    .join('/');
+    .join("/");
   const apiUrl = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}`;
   const body = await httpsGet(apiUrl);
   const files = JSON.parse(body.toString());
 
   if (!Array.isArray(files)) {
-    throw new Error(`Unexpected response from GitHub API for path "${repoPath}"`);
+    throw new Error(
+      `Unexpected response from GitHub API for path "${repoPath}"`,
+    );
   }
 
   return files;
 }
 
-async function downloadGithubDirectoryRecursive({ owner, repo, repoPath, destDir, relativePath = '' }) {
+async function downloadGithubDirectoryRecursive({
+  owner,
+  repo,
+  repoPath,
+  destDir,
+  relativePath = "",
+}) {
   const listPath = relativePath ? `${repoPath}/${relativePath}` : repoPath;
   const entries = await fetchGithubContents(owner, repo, listPath);
 
   for (const entry of entries) {
-    if (entry.type === 'file') {
-      const entryRelativePath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+    if (entry.type === "file") {
+      const entryRelativePath = relativePath
+        ? `${relativePath}/${entry.name}`
+        : entry.name;
       const destPath = path.join(destDir, entryRelativePath);
       console.log(`  Downloading ${entryRelativePath}...`);
       await downloadFile(entry.download_url, destPath);
       continue;
     }
 
-    if (entry.type === 'dir') {
-      const childRelativePath = relativePath ? `${relativePath}/${entry.name}` : entry.name;
+    if (entry.type === "dir") {
+      const childRelativePath = relativePath
+        ? `${relativePath}/${entry.name}`
+        : entry.name;
       fs.mkdirSync(path.join(destDir, childRelativePath), { recursive: true });
-      await downloadGithubDirectoryRecursive({ owner, repo, repoPath, destDir, relativePath: childRelativePath });
+      await downloadGithubDirectoryRecursive({
+        owner,
+        repo,
+        repoPath,
+        destDir,
+        relativePath: childRelativePath,
+      });
     }
   }
 }
@@ -170,36 +223,46 @@ async function installSkillToTarget({ owner, repo, skill, sourceUrl, target }) {
   const installDir = getSkillInstallDir(target, skill);
   const repoSkillPath = `skills/${skill}`;
 
-  console.log(`Fetching skill "${skill}" from ${owner}/${repo} for ${target}...`);
+  console.log(
+    `Fetching skill "${skill}" from ${owner}/${repo} for ${target}...`,
+  );
   fs.mkdirSync(installDir, { recursive: true });
 
   try {
-    await downloadGithubDirectoryRecursive({ owner, repo, repoPath: repoSkillPath, destDir: installDir });
+    await downloadGithubDirectoryRecursive({
+      owner,
+      repo,
+      repoPath: repoSkillPath,
+      destDir: installDir,
+    });
   } catch (err) {
     throw new Error(`Could not fetch skill from GitHub API: ${err.message}`);
   }
 
   const sourceMeta = { url: sourceUrl, owner, repo, skill };
-  fs.writeFileSync(path.join(installDir, '.source.json'), JSON.stringify(sourceMeta, null, 2));
+  fs.writeFileSync(
+    path.join(installDir, ".source.json"),
+    JSON.stringify(sourceMeta, null, 2),
+  );
 
   return installDir;
 }
 
 function getSourcePathForTarget(target, skillName) {
-  return path.join(getSkillInstallDir(target, skillName), '.source.json');
+  return path.join(getSkillInstallDir(target, skillName), ".source.json");
 }
 
 function loadSourceForTarget(target, skillName) {
   const sourcePath = getSourcePathForTarget(target, skillName);
   if (!fs.existsSync(sourcePath)) {
-    return { ok: false, reason: 'not_found' };
+    return { ok: false, reason: "not_found" };
   }
 
   try {
-    const source = JSON.parse(fs.readFileSync(sourcePath, 'utf8'));
+    const source = JSON.parse(fs.readFileSync(sourcePath, "utf8"));
     return { ok: true, source };
   } catch {
-    return { ok: false, reason: 'malformed_source' };
+    return { ok: false, reason: "malformed_source" };
   }
 }
 
@@ -207,11 +270,16 @@ async function updateSkillOnTarget({ target, skillName }) {
   const loaded = loadSourceForTarget(target, skillName);
 
   if (!loaded.ok) {
-    if (loaded.reason === 'not_found') {
-      return { status: 'not_found', target, skillName, message: `No source info found for "${skillName}" in ${target}.` };
+    if (loaded.reason === "not_found") {
+      return {
+        status: "not_found",
+        target,
+        skillName,
+        message: `No source info found for "${skillName}" in ${target}.`,
+      };
     }
     return {
-      status: 'failed',
+      status: "failed",
       target,
       skillName,
       message: `Could not read source info for "${skillName}" in ${target}: malformed .source.json`,
@@ -220,10 +288,16 @@ async function updateSkillOnTarget({ target, skillName }) {
 
   const { owner, repo, skill, url } = loaded.source;
   try {
-    const installDir = await installSkillToTarget({ owner, repo, skill, sourceUrl: url, target });
-    return { status: 'updated', target, skillName, installDir };
+    const installDir = await installSkillToTarget({
+      owner,
+      repo,
+      skill,
+      sourceUrl: url,
+      target,
+    });
+    return { status: "updated", target, skillName, installDir };
   } catch (err) {
-    return { status: 'failed', target, skillName, message: err.message };
+    return { status: "failed", target, skillName, message: err.message };
   }
 }
 
@@ -238,13 +312,15 @@ function listUpdatableSkillsForTarget(target) {
   return entries
     .filter((e) => e.isDirectory())
     .map((e) => e.name)
-    .filter((name) => fs.existsSync(path.join(skillsRoot, name, '.source.json')));
+    .filter((name) =>
+      fs.existsSync(path.join(skillsRoot, name, ".source.json")),
+    );
 }
 
 function collectRestartTargets(results) {
   const shouldRestart = new Set();
   for (const result of results) {
-    if (['installed', 'updated', 'removed'].includes(result.status)) {
+    if (["installed", "updated", "removed"].includes(result.status)) {
       shouldRestart.add(result.target);
     }
   }
@@ -254,7 +330,7 @@ function collectRestartTargets(results) {
 function printRestartHint(targets) {
   if (targets.length === 0) return;
   const labels = targets.map((t) => TARGET_CONFIG[t].label);
-  console.log(`Restart ${labels.join(' and ')} to apply changes.`);
+  console.log(`Restart ${labels.join(" and ")} to apply changes.`);
 }
 
 function summarizeTargetResults(results) {
@@ -262,22 +338,79 @@ function summarizeTargetResults(results) {
   let failedCount = 0;
 
   for (const result of results) {
-    if (['installed', 'updated', 'removed'].includes(result.status)) {
+    if (["installed", "updated", "removed"].includes(result.status)) {
       okCount += 1;
-      console.log(`  [${result.target}] ${result.status} -> ${result.installDir}/`);
+      console.log(
+        `  [${result.target}] ${result.status} (${result.skillName}) -> ${result.installDir}/`,
+      );
       continue;
     }
 
-    if (result.status === 'not_found') {
+    if (result.status === "skipped") {
+      console.log(
+        `  [${result.target}] skipped (${result.skillName}): ${result.message}`,
+      );
+      continue;
+    }
+
+    if (result.status === "not_found") {
       console.log(`  [${result.target}] not found (${result.skillName})`);
       continue;
     }
 
     failedCount += 1;
-    console.error(`  [${result.target}] failed: ${result.message}`);
+    console.error(
+      `  [${result.target}] failed (${result.skillName}): ${result.message}`,
+    );
   }
 
   return { okCount, failedCount };
+}
+
+async function maybeInstallCodeReviewRouter({ owner, repo, target }) {
+  const installDir = getSkillInstallDir(target, AUTO_ROUTER_SKILL);
+  const sourcePath = path.join(installDir, ".source.json");
+
+  if (fs.existsSync(sourcePath)) {
+    return {
+      status: "skipped",
+      target,
+      skillName: AUTO_ROUTER_SKILL,
+      message: "already installed",
+    };
+  }
+
+  if (fs.existsSync(installDir)) {
+    fs.rmSync(installDir, { recursive: true, force: true });
+  }
+
+  const sourceUrl = `https://github.com/${owner}/${repo}/${AUTO_ROUTER_SKILL}`;
+  try {
+    const routerInstallDir = await installSkillToTarget({
+      owner,
+      repo,
+      skill: AUTO_ROUTER_SKILL,
+      sourceUrl,
+      target,
+    });
+    return {
+      status: "installed",
+      target,
+      skillName: AUTO_ROUTER_SKILL,
+      installDir: routerInstallDir,
+    };
+  } catch (err) {
+    if (fs.existsSync(installDir) && !fs.existsSync(sourcePath)) {
+      fs.rmSync(installDir, { recursive: true, force: true });
+    }
+
+    return {
+      status: "failed",
+      target,
+      skillName: AUTO_ROUTER_SKILL,
+      message: err.message,
+    };
+  }
 }
 
 function removeSkillOnTarget({ target, skillName }) {
@@ -285,18 +418,23 @@ function removeSkillOnTarget({ target, skillName }) {
   try {
     installDir = getSkillInstallDir(target, skillName);
   } catch (err) {
-    return { status: 'failed', target, skillName, message: err.message };
+    return { status: "failed", target, skillName, message: err.message };
   }
 
   if (!fs.existsSync(installDir)) {
-    return { status: 'not_found', target, skillName, message: `Skill "${skillName}" not found in ${target}.` };
+    return {
+      status: "not_found",
+      target,
+      skillName,
+      message: `Skill "${skillName}" not found in ${target}.`,
+    };
   }
 
   try {
     fs.rmSync(installDir, { recursive: true, force: false });
-    return { status: 'removed', target, skillName, installDir };
+    return { status: "removed", target, skillName, installDir };
   } catch (err) {
-    return { status: 'failed', target, skillName, message: err.message };
+    return { status: "failed", target, skillName, message: err.message };
   }
 }
 
@@ -313,18 +451,43 @@ async function addSkillMultiTarget({ sourceUrl, target }) {
   const targets = resolveTargets(target);
   const results = [];
 
-  console.log(`Installing "${skill}" for targets: ${targets.join(', ')}`);
+  console.log(`Installing "${skill}" for targets: ${targets.join(", ")}`);
 
   for (const targetName of targets) {
     try {
-      const installDir = await installSkillToTarget({ owner, repo, skill, sourceUrl, target: targetName });
-      results.push({ status: 'installed', target: targetName, skillName: skill, installDir });
+      const installDir = await installSkillToTarget({
+        owner,
+        repo,
+        skill,
+        sourceUrl,
+        target: targetName,
+      });
+      results.push({
+        status: "installed",
+        target: targetName,
+        skillName: skill,
+        installDir,
+      });
+
+      if (skill === AUTO_ROUTER_PARENT_SKILL) {
+        const routerResult = await maybeInstallCodeReviewRouter({
+          owner,
+          repo,
+          target: targetName,
+        });
+        results.push(routerResult);
+      }
     } catch (err) {
-      results.push({ status: 'failed', target: targetName, skillName: skill, message: err.message });
+      results.push({
+        status: "failed",
+        target: targetName,
+        skillName: skill,
+        message: err.message,
+      });
     }
   }
 
-  console.log('\nResults:');
+  console.log("\nResults:");
   const summary = summarizeTargetResults(results);
   printRestartHint(collectRestartTargets(results));
 
@@ -334,7 +497,7 @@ async function addSkillMultiTarget({ sourceUrl, target }) {
   }
 
   if (summary.failedCount > 0) {
-    console.log('Installation completed with partial success.');
+    console.log("Installation completed with partial success.");
   }
 
   return true;
@@ -344,23 +507,23 @@ async function updateNamedSkillMultiTarget({ skillName, target }) {
   const targets = resolveTargets(target);
   const results = [];
 
-  console.log(`Updating "${skillName}" for targets: ${targets.join(', ')}`);
+  console.log(`Updating "${skillName}" for targets: ${targets.join(", ")}`);
 
   for (const targetName of targets) {
     results.push(await updateSkillOnTarget({ target: targetName, skillName }));
   }
 
-  console.log('\nResults:');
+  console.log("\nResults:");
   const summary = summarizeTargetResults(results);
   printRestartHint(collectRestartTargets(results));
 
   if (summary.okCount === 0) {
-    console.error('Error: update failed for all requested targets.');
+    console.error("Error: update failed for all requested targets.");
     return false;
   }
 
   if (summary.failedCount > 0) {
-    console.log('Update completed with partial success.');
+    console.log("Update completed with partial success.");
   }
 
   return true;
@@ -370,23 +533,23 @@ function removeNamedSkillMultiTarget({ skillName, target }) {
   const targets = resolveTargets(target);
   const results = [];
 
-  console.log(`Removing "${skillName}" for targets: ${targets.join(', ')}`);
+  console.log(`Removing "${skillName}" for targets: ${targets.join(", ")}`);
 
   for (const targetName of targets) {
     results.push(removeSkillOnTarget({ target: targetName, skillName }));
   }
 
-  console.log('\nResults:');
+  console.log("\nResults:");
   const summary = summarizeTargetResults(results);
   printRestartHint(collectRestartTargets(results));
 
   if (summary.okCount === 0) {
-    console.error('Error: remove failed for all requested targets.');
+    console.error("Error: remove failed for all requested targets.");
     return false;
   }
 
   if (summary.failedCount > 0) {
-    console.log('Remove completed with partial success.');
+    console.log("Remove completed with partial success.");
   }
 
   return true;
@@ -402,7 +565,9 @@ async function updateAllSkillsMultiTarget({ target }) {
 
   for (const targetName of targets) {
     const skillNames = listUpdatableSkillsForTarget(targetName);
-    console.log(`\n[${targetName}] ${skillNames.length} updatable skill(s) found.`);
+    console.log(
+      `\n[${targetName}] ${skillNames.length} updatable skill(s) found.`,
+    );
 
     if (skillNames.length === 0) {
       continue;
@@ -411,7 +576,9 @@ async function updateAllSkillsMultiTarget({ target }) {
     anyUpdatable = true;
     const results = [];
     for (const skillName of skillNames) {
-      results.push(await updateSkillOnTarget({ target: targetName, skillName }));
+      results.push(
+        await updateSkillOnTarget({ target: targetName, skillName }),
+      );
     }
 
     const summary = summarizeTargetResults(results);
@@ -424,8 +591,10 @@ async function updateAllSkillsMultiTarget({ target }) {
   }
 
   if (!anyUpdatable) {
-    console.log('\nNo updatable skills found in the selected target(s).');
-    console.log('Re-install skills with "npx @tailorhub/skills add <url>" to enable updates.');
+    console.log("\nNo updatable skills found in the selected target(s).");
+    console.log(
+      'Re-install skills with "npx @tailorhub/skills add <url>" to enable updates.',
+    );
     return true;
   }
 
@@ -433,31 +602,43 @@ async function updateAllSkillsMultiTarget({ target }) {
   printRestartHint([...restartTargets]);
 
   if (!anySuccess) {
-    console.error('Error: no skill could be updated successfully.');
+    console.error("Error: no skill could be updated successfully.");
     return false;
   }
 
   return true;
 }
 
-const SKILLS_REPO = { owner: 'TailorHub-Mad', repo: 'ai-skills' };
+const SKILLS_REPO = { owner: "TailorHub-Mad", repo: "ai-skills" };
 
 function rlPrompt(rl, question) {
   return new Promise((resolve) => rl.question(question, resolve));
 }
 
 async function fetchAvailableSkills() {
-  const contents = await fetchGithubContents(SKILLS_REPO.owner, SKILLS_REPO.repo, 'skills');
-  return contents.filter((e) => e.type === 'dir').map((e) => e.name);
+  const contents = await fetchGithubContents(
+    SKILLS_REPO.owner,
+    SKILLS_REPO.repo,
+    "skills",
+  );
+  return contents.filter((e) => e.type === "dir").map((e) => e.name);
 }
 
 async function fetchSkillDescription(skillName) {
   try {
-    const contents = await fetchGithubContents(SKILLS_REPO.owner, SKILLS_REPO.repo, `skills/${skillName}/agents`);
-    const yamlFile = contents.find((e) => e.name.endsWith('.yaml') || e.name.endsWith('.yml'));
+    const contents = await fetchGithubContents(
+      SKILLS_REPO.owner,
+      SKILLS_REPO.repo,
+      `skills/${skillName}/agents`,
+    );
+    const yamlFile = contents.find(
+      (e) => e.name.endsWith(".yaml") || e.name.endsWith(".yml"),
+    );
     if (!yamlFile) return null;
     const data = await httpsGet(yamlFile.download_url);
-    const match = data.toString().match(/short_description:\s*["']?(.+?)["']?\s*$/m);
+    const match = data
+      .toString()
+      .match(/short_description:\s*["']?(.+?)["']?\s*$/m);
     return match ? match[1].trim() : null;
   } catch {
     return null;
@@ -465,11 +646,11 @@ async function fetchSkillDescription(skillName) {
 }
 
 function parseSelection(input, total) {
-  if (input.trim().toLowerCase() === 'all') {
+  if (input.trim().toLowerCase() === "all") {
     return Array.from({ length: total }, (_, i) => i);
   }
   return input
-    .split(',')
+    .split(",")
     .map((s) => parseInt(s.trim(), 10) - 1)
     .filter((i) => Number.isInteger(i) && i >= 0 && i < total);
 }
@@ -480,59 +661,75 @@ async function runInteractiveMode() {
     process.exit(1);
   }
 
-  console.log('\nWelcome to TailorHub Skills!\n');
-  process.stdout.write('Fetching available skills...');
+  console.log("\nWelcome to TailorHub Skills!\n");
+  process.stdout.write("Fetching available skills...");
 
   let skills;
   try {
     skills = await fetchAvailableSkills();
   } catch (err) {
-    process.stdout.write('\n');
+    process.stdout.write("\n");
     console.error(`Error fetching skills: ${err.message}`);
     process.exit(1);
   }
 
   const descriptions = await Promise.all(skills.map(fetchSkillDescription));
-  process.stdout.write('\n\n');
+  process.stdout.write("\n\n");
 
   if (skills.length === 0) {
-    console.log('No skills available.');
+    console.log("No skills available.");
     return;
   }
 
-  console.log('Available skills:');
+  console.log("Available skills:");
   const nameWidth = Math.max(...skills.map((s) => s.length));
   skills.forEach((name, i) => {
-    const desc = descriptions[i] ? `  ${descriptions[i]}` : '';
-    console.log(`  ${String(i + 1).padStart(2)}. ${name.padEnd(nameWidth)}${desc}`);
+    const desc = descriptions[i] ? `  ${descriptions[i]}` : "";
+    console.log(
+      `  ${String(i + 1).padStart(2)}. ${name.padEnd(nameWidth)}${desc}`,
+    );
   });
-  console.log('');
+  console.log("");
 
-  const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+  });
 
   let selectedIndices = [];
   while (selectedIndices.length === 0) {
-    const selInput = await rlPrompt(rl, `Select skills to install (e.g. 1  or  1,2  or  all): `);
+    const selInput = await rlPrompt(
+      rl,
+      `Select skills to install (e.g. 1  or  1,2  or  all): `,
+    );
     selectedIndices = parseSelection(selInput, skills.length);
     if (selectedIndices.length === 0) {
-      console.log('  No valid selection, try again.');
+      console.log("  No valid selection, try again.");
     }
   }
 
-  const targetInput = await rlPrompt(rl, `Select target (claude/codex/opencode/all) [all]: `);
+  const targetInput = await rlPrompt(
+    rl,
+    `Select target (claude/codex/opencode/all) [all]: `,
+  );
   rl.close();
 
-  const target = targetInput.trim() || 'all';
+  const target = targetInput.trim() || "all";
   if (!VALID_TARGETS.has(target)) {
-    console.error(`Invalid target "${target}". Use claude, codex, opencode, or all.`);
+    console.error(
+      `Invalid target "${target}". Use claude, codex, opencode, or all.`,
+    );
     process.exit(1);
   }
 
-  console.log('');
+  console.log("");
   const baseUrl = `https://github.com/${SKILLS_REPO.owner}/${SKILLS_REPO.repo}`;
 
   for (const i of selectedIndices) {
-    const ok = await addSkillMultiTarget({ sourceUrl: `${baseUrl}/${skills[i]}`, target });
+    const ok = await addSkillMultiTarget({
+      sourceUrl: `${baseUrl}/${skills[i]}`,
+      target,
+    });
     if (!ok) process.exit(1);
   }
 }
@@ -554,12 +751,12 @@ async function main() {
     return;
   }
 
-  if (!['add', 'update', 'remove'].includes(command)) {
+  if (!["add", "update", "remove"].includes(command)) {
     printUsage();
     process.exit(1);
   }
 
-  if (command === 'add') {
+  if (command === "add") {
     if (!arg || positionals.length !== 2) {
       printUsage();
       process.exit(1);
@@ -570,7 +767,7 @@ async function main() {
     return;
   }
 
-  if (command === 'update') {
+  if (command === "update") {
     if (positionals.length > 2) {
       printUsage();
       process.exit(1);
@@ -583,7 +780,7 @@ async function main() {
     if (!ok) process.exit(1);
   }
 
-  if (command === 'remove') {
+  if (command === "remove") {
     if (!arg || positionals.length !== 2) {
       printUsage();
       process.exit(1);
