@@ -1,0 +1,4 @@
+interface:
+  display_name: Code Review Router
+  short_description: Routes code review to a repo-specific skill when available; otherwise uses tailor-code-review.
+  default_prompt: Review this branch. Prefer a repo-specific code-review skill if available, otherwise use tailor-code-review.
