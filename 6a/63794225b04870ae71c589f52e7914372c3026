@@ -1,0 +1,38 @@
+.gitignore
+  h_f24076a659664f 2-4
+README.md
+  h_f24076a659664f 134,136-155
+skills/tailor-mermaid-to-drawio/SKILL.md
+  h_f24076a659664f 3,6-138
+skills/tailor-mermaid-to-drawio/agents/openai.yaml
+  h_f24076a659664f 3-4
+skills/tailor-mermaid-to-drawio/assets/README.md
+  h_f24076a659664f 1-20
+skills/tailor-mermaid-to-drawio/assets/architecture-starter.drawio
+  h_f24076a659664f 1-58
+skills/tailor-mermaid-to-drawio/evals/evals.json
+  h_f24076a659664f 1-33
+skills/tailor-mermaid-to-drawio/references/aws-icons.md
+  h_f24076a659664f 1,3-5,7-10,12-24
+skills/tailor-mermaid-to-drawio/references/azure-icons.md
+  h_f24076a659664f 1,3-6,8-25,27-29,31-33,35-38
+skills/tailor-mermaid-to-drawio/references/third-party-icons.md
+  h_f24076a659664f 1-44
+skills/tailor-mermaid-to-drawio/references/visual-standard.md
+  h_f24076a659664f 1-140
+skills/tailor-mermaid-to-drawio/scripts/check_drawio.py
+  h_f24076a659664f 1-198
+skills/tailor-mermaid-to-drawio/scripts/test_check_drawio.py
+  h_f24076a659664f 1-162
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "6a63794225b04870ae71c589f52e7914372c3026",
+  "prompts": {},
+  "humans": {
+    "h_f24076a659664f": {
+      "author": "Lautaro German <lautaro.zuniga@tailor-hub.com>"
+    }
+  }
+}
