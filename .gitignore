@@ -1,1 +1,4 @@
 docs/merge-request/
+.reviews/
+.codegraph/
+.cursor/rules/codegraph.mdc

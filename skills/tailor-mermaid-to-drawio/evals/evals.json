@@ -1,0 +1,33 @@
+{
+  "skill_name": "tailor-mermaid-to-drawio",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Hazme un diagrama Draw.io profesional: un cliente entra por Azure Front Door a una Function API y esta guarda estado en Cosmos DB. Stripe manda webhooks firmados por Front Door a otra Function. Pon iconos de los servicios y Stripe, contenedores de responsabilidad y líneas que se entiendan sin superponerse. Es una propuesta, no algo desplegado.",
+      "expected_output": "Editable .drawio with white rounded service cards, thin semantic-color borders, actual Azure/Stripe logos INSIDE each card on the left and bold service names to their right, plus optional gray role text. No floating logos or icon-only nodes. Include an explicit neutral fallback only if the exact icon cannot be verified, a proposed-state label, external Stripe outside the Azure ownership boundary, readable primary/callback paths, structural check evidence, and an honest rendered-review status.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Pasa este Mermaid a Draw.io con buen acabado: flowchart LR\nClient --> Gateway\nGateway --> Lambda\nLambda --> SQS\nSQS --> Worker\nWorker --> Aurora\nWorker --> Stripe\nStripe --> Webhook\nWebhook --> SQS\nWorker --> CloudWatch\nLambda --> CloudWatch\nEs AWS; Aurora es PostgreSQL y Stripe es externo. No metas MSK ni Kafka. Quiero leer bien los callbacks y la observabilidad.",
+      "expected_output": "Native editable XML preserving every meaningful edge, exact AWS service/Stripe representation, appropriate container ownership, distinct callback/observability paths, and either a readable single view or clearly linked overview/detail pages. No invented broker or provider substitution. Inspect an export when tools allow it.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Mejora solo la página Architecture starter de este .drawio. Pasa las etiquetas a español y distingue los dos almacenes por nombre. Conserva IDs y relaciones. No cambies otras páginas si las hay y aplica el estilo de tarjetas con iconos y conectores limpios.",
+      "expected_output": "Targeted edit of the supplied page preserving IDs, edge semantics, icons and unrelated pages/metadata; localized labels and distinct store names; XML/geometry check plus rendered review or explicit limitation.",
+      "files": ["assets/architecture-starter.drawio"]
+    }
+  ],
+  "trigger_checks": [
+    {"query": "hazme un diagrama de esta arquitectura que quede profesional", "should_trigger": true},
+    {"query": "mejora este drawio, con logos de terceros y sin líneas superpuestas", "should_trigger": true},
+    {"query": "convierte este Mermaid a Draw.io con los servicios de Azure", "should_trigger": true},
+    {"query": "haz un ERD editable en drawio con notación estándar y sin iconos cloud", "should_trigger": true},
+    {"query": "solo quiero el Mermaid en el chat, no un archivo drawio", "should_trigger": false},
+    {"query": "explica qué es un outbox sin crear ningún diagrama", "should_trigger": false},
+    {"query": "qué diferencia hay entre Azure Cosmos DB y PostgreSQL", "should_trigger": false},
+    {"query": "cambia el icono de Stripe en el frontend React", "should_trigger": false}
+  ]
+}
