@@ -1,81 +1,138 @@
 ---
 name: tailor-mermaid-to-drawio
-description: Convert Mermaid architecture diagrams into polished Draw.io XML diagrams using cloud-native Azure or AWS icon libraries, enterprise container boundaries, and clean labeled flows. Use when a user asks to transform Mermaid into Draw.io, requests Azure/AWS architecture visuals, or needs service-accurate icon mapping and layout consistency for cloud diagrams.
+description: Create, convert, or improve polished editable Draw.io diagrams from a description, Mermaid, or existing .drawio files. Use for technical architecture, service integrations, cloud infrastructure, security boundaries, and event/data flows, including requests such as "hazme un diagrama", "que quede profesional", or "sin líneas superpuestas". Applies Azure/AWS service icons, accurate third-party logos, clean connectors, and a visual quality pass. Respect an explicitly requested Mermaid-only or other output format; do not trigger for explanation-only questions.
 ---
 
-# Tailor Mermaid To Drawio
+# Tailor Mermaid to Draw.io
 
-Convert Mermaid graph intent into clean Draw.io XML with cloud-specific icons and consistent architecture layout.
+Deliver an editable diagram that is suitable for a technical presentation or
+shared documentation without the user having to request visual polish separately.
+Good XML is necessary; a readable composition is the actual goal.
 
-## Workflow
+## 1. Establish the contract
 
-0. Preflight: verify Draw.io MCP availability
-- Before doing any substantial work, confirm the Draw.io MCP tools are available in the current session/environment.
-- If the Draw.io MCP is not available, stop immediately and return a short message telling the user that this skill requires the Draw.io MCP to be enabled/installed.
-- Do not continue with icon mapping, layout work, or XML generation if the MCP is unavailable (to avoid wasting tokens).
+- Accept prose, Mermaid, or an existing diagram. Mermaid is not a prerequisite.
+- Match the user's language and preserve exact product/service names, direction,
+  ownership, and synchronous/asynchronous meaning.
+- Identify the diagram's main question, actors, boundaries, and primary flow.
+  Ask only about missing information that materially changes that meaning.
+- Treat a reference diagram as a style reference, not evidence that its proposed
+  architecture, service boundaries, or implementation decisions apply elsewhere.
+- If a reference `.drawio` is supplied, list its pages and load only the relevant
+  ones. When editing, preserve other pages, links, metadata, and unrelated content.
+- Use the supplied Draw.io MCP tool schemas as the authority for supported
+  parameters. If MCP is unavailable, report that the interactive preview/routing
+  is unavailable; still deliver editable XML when local file tools permit it.
+  Do not pretend that file creation alone is a rendered preview.
 
-1. Identify provider and diagram scope
-- Detect target cloud: Azure, AWS, or mixed.
-- Preserve exact service labels from the Mermaid source and user prompt.
-- If provider is ambiguous, infer from service names and keep labels unchanged.
+## 2. Load the visual contract and relevant resources
 
-2. Load only the needed icon mapping reference
-- For Azure paths and mappings, read `references/azure-icons.md` (relative to this skill directory).
-- For AWS paths and mappings, read `references/aws-icons.md` (relative to this skill directory).
-- Do not load both references unless the diagram is intentionally multi-cloud.
+Read `references/visual-standard.md` for every creation or substantial redesign.
+Use `assets/architecture-starter.drawio` as a composition/style seed when useful,
+not as a required architecture or a fixed-size canvas.
 
-3. Build nodes with image icon style
-- Use image-style nodes with provider icon paths from the references.
-- Keep node text as the exact service name.
-- If an exact icon file is unavailable in the current Draw.io build, choose the nearest equivalent from the same domain/category and keep the label exact.
-- For Kafka components, default to `mxgraph.alibaba_cloud.kafka` when it renders more reliably than provider-specific Kafka/MSK variants in the current Draw.io build (unless the user requests a different Kafka icon explicitly).
-- For database engines (PostgreSQL, MySQL, MongoDB), prefer engine-specific icons over generic cylinders when available.
-- Reliable generic engine icons in Draw.io:
-  - PostgreSQL: `mxgraph.alibaba_cloud.postgresql`
-  - MySQL: `mxgraph.alibaba_cloud.mysql`
-  - MongoDB: `mxgraph.alibaba_cloud.mongodb`
-- In AWS diagrams, if the label explicitly indicates a managed AWS database variant, prefer AWS-native database icons:
-  - RDS PostgreSQL: `mxgraph.aws4.rds_postgresql_instance` (or `_alt`)
-  - RDS MySQL: `mxgraph.aws4.rds_mysql_instance` (or `_alt`)
-  - Aurora: `mxgraph.aws4.aurora` / `mxgraph.aws4.aurora_instance`
-  - Mongo-compatible managed DB: `mxgraph.aws4.documentdb_with_mongodb_compatibility` (or `mxgraph.aws4.documentdb_elastic_clusters` when explicitly elastic)
-- If the provider is AWS but the node is only labeled with a plain engine name (for example `PostgreSQL`, `MySQL`, `MongoDB`) and no managed service is specified, prefer the stable engine icon (for example Alibaba Cloud engine logos) while keeping the exact label and container context.
-- In Azure diagrams, if the label explicitly indicates a managed Azure database service, prefer Azure-native database icons:
-  - Azure Database for PostgreSQL -> Azure PostgreSQL service icon from `img/lib/azure2/...` (or nearest Azure PostgreSQL icon variant available in the current build)
-  - Azure Database for MySQL -> Azure MySQL service icon from `img/lib/azure2/...` (or nearest Azure MySQL icon variant available in the current build)
-  - Azure Cosmos DB (including Mongo API variants) -> Azure Cosmos DB icon / Mongo API variant when available
-- If the provider is Azure but the node is only labeled with a plain engine name (for example `PostgreSQL`, `MySQL`, `MongoDB`) and no Azure managed service is specified, prefer the stable engine icon (for example `mxgraph.alibaba_cloud.postgresql/mysql/mongodb`) while keeping the exact label and container context.
+Read only the icon references needed:
+- Azure: `references/azure-icons.md`.
+- AWS: `references/aws-icons.md`.
+- External products, brands, or plain database engines:
+  `references/third-party-icons.md`.
 
-4. Apply enterprise architecture layout
-- Group services into clear containers by tier/domain (Edge, API, Compute, Data, Observability, Shared Services).
-- Keep data flow direction consistent (typically left-to-right).
-- Route connectors to minimize crossings and label critical paths.
-- Keep ingress/egress boundaries explicit (internet edge, private zone, data boundary).
+Keep classic flowcharts, sequence diagrams, UML, and ER diagrams semantically
+correct. Use their standard shapes; do not add cloud icons to a decision diamond
+or a class just to decorate it. Respect a request for basic shapes.
 
-5. Produce Draw.io XML output
-- Emit valid Draw.io XML only.
-- Final output must be Draw.io XML via the Draw.io XML MCP path (not a Mermaid import URL).
-- Ensure all referenced icon paths follow provider library conventions.
-- Keep text readable and avoid overlapping shapes and labels.
+## 3. Compose before connecting
 
-6. Verify before returning
-- Confirm the final artifact is XML-based (not Mermaid import) and opens with `type=xml`.
-- Spot-check at least one provider icon style is present (for example `mxgraph.aws4...` or `img/lib/aws4/...`).
-- If a third-party component is present (for example Kafka), prefer provider-native managed service icons first (for example MSK on AWS), unless the user requests a specific alternate icon library/path.
+- Choose one reading direction and align the main path on a clear spine.
+- Group by actual responsibility, trust boundary, or phase; use parent-child
+  containment, not large rectangles drawn behind unrelated nodes.
+- Place external actors outside implementation boundaries. A phase grouping is
+  not itself a deployment or ownership boundary; label that distinction.
+- Render services and named providers as white rounded cards (`fillColor=#FFFFFF`)
+  with a thin semantic-color border, the real service/brand icon INSIDE the card
+  on the left, and a bold service name to its right. An optional short secondary
+  line sits below the name. This is the default service-node format, not an
+  optional decoration; see the exact card contract in the visual standard.
+- Treat icon, name, and secondary text as one service card. Connect edges to the
+  card, not to a separate floating logo. Keep explanatory prose in separate notes.
+- Use soft container fills, restrained semantic colors, consistent spacing,
+  and readable typography from the visual standard.
+- Reserve empty space for connectors and labels. If the graph becomes dense,
+  split an overview and a detail view rather than shrinking everything to fit.
 
-## Output Rules
+## 4. Resolve real icons
 
-- Preserve user-intended semantics from Mermaid.
-- Prefer icon correctness over visual novelty.
-- Keep output production-ready: balanced spacing, aligned tiers, and clear labels.
-- Fail fast if Draw.io MCP is unavailable; provide a brief prerequisite message instead of attempting a text-only conversion.
-- If fallback icons are used, preserve exact service names so meaning is never lost.
-- For Kafka in mixed or AWS diagrams, prefer the stable `mxgraph.alibaba_cloud.kafka` icon unless the user explicitly requests AWS MSK branding.
-- For databases, prefer engine logos first, then provider-managed DB icons when the service is explicitly named, and only then fall back to a generic database cylinder/icon.
-- Apply the same managed-service-vs-engine rule consistently across AWS and Azure database nodes.
-- If you use Mermaid import as a preview, do not stop there; still deliver the XML version as the final result.
+- Search the available Draw.io library for named cloud services and brands.
+  Inspect the returned title and style: a lexical match is not proof of identity
+  (a "Diagonal Stripe" shape is not the Stripe logo).
+- Prefer the exact managed service icon when explicitly named; prefer the exact
+  product/engine logo when no managed variant is specified.
+- Use a verified official/library SVG if search has no suitable result. Embed
+  when permitted and portability matters; retain required attribution.
+- Never invent asset paths or use another vendor's logo as a generic substitute.
+  If the exact logo cannot be sourced, use a clearly labeled neutral shape and
+  mention the fallback briefly in the handoff.
 
-## Resources
+## 5. Route for unambiguous reading
 
-- Azure mappings: `references/azure-icons.md` (relative to this skill directory)
-- AWS mappings: `references/aws-icons.md` (relative to this skill directory)
+- Use consistent orthogonal connectors for architecture/flow diagrams. Other
+  diagram types retain their standard connector notation.
+- Distinct relationships should not share an indistinguishable stretch of line.
+  Avoid crossing cards, icons, text, notes, or container title bars.
+- Prefer rearranging nearby nodes, increasing space, or splitting views to adding
+  bends. Do not invent an architectural gateway just to hide a routing problem.
+- Use short edge labels with a background; number a lifecycle only when the
+  numbering describes real ordering. Explain dashed/color meanings in a legend.
+- For deliberately placed XML with obstructed or dense connections, use
+  `routing: "libavoid"` on `open_drawio_xml` when the exposed tool supports it.
+  The router keeps vertices in place; it does not validate labels or semantics.
+- Do not hand-author waypoint arrays to fight the router. Add connection-point
+  overrides only for intentional geometry, not as a blanket default.
+- Auto-layout is optional and capability-dependent. Do not send unsupported
+  `postLayout` parameters or reflow a meaningful container layout blindly.
+
+## 6. Generate, check, preview, refine
+
+1. Produce well-formed native Draw.io XML with unique IDs, escaped HTML labels,
+   valid parent/source/target references, and geometry on every edge. Use
+   `html=1` for HTML labels and actual XML line breaks, not literal `\n` strings.
+2. Save a `.drawio` artifact. If filesystem tools are unavailable, provide XML
+   that the user can save. A Mermaid import URL alone is not the final artifact.
+3. When Python is available, run:
+   ```sh
+   python3 <skill-dir>/scripts/check_drawio.py <diagram.drawio>
+   ```
+   Fix structural errors and unintended geometry overlaps. The checker is
+   read-only and does not prove icon, text, connector, or visual correctness.
+4. Open via the XML MCP path. For an existing multi-page file, replace only the
+   selected page using the appropriate page tool.
+5. Inspect a rendered preview/export when an image or browser inspection tool is
+   available. Check the icon rendering, text fit, connector/label collisions,
+   arrow direction, title bars, and legibility both at overview and reading zoom.
+   Draw.io Desktop's export CLI is also suitable: discover the installed executable
+   and run `drawio --export --format png --border 20 --output <preview.png>
+   <diagram.drawio>` using its actual path. Read the resulting image with an
+   image-capable tool; an export exit code alone is not a visual review.
+6. Fix observed problems and repeat the relevant check. If the tool returns
+   routed XML, persist that final model. An open URL is not a saved routed model;
+   if routing is only available in the editor, disclose that it must be saved
+   there and do not claim the on-disk file contains the routed result.
+
+Stop when the acceptance checklist in the visual standard is met. If preview or
+export inspection is unavailable, deliver the checked artifact and explicitly
+say visual verification remains pending. Never claim "no overlaps" based only
+on an XML parse or an automatic routing request.
+
+## Handoff
+
+Link the editable file and, when actually produced, the preview/export. Briefly
+state material assumptions, icon fallbacks, and verification limitations. Normal
+chat explanations are allowed; "XML output" does not mean dumping a huge XML
+document into the final answer when an artifact link is available.
+
+## Maintainer checks
+
+`evals/evals.json` contains realistic generation/editing and trigger cases.
+`python3 -B -m unittest discover -s <skill-dir>/scripts -p 'test_*.py'`
+tests the structural checker. Compare rendered outputs for generation cases;
+checker tests alone are not a benchmark of diagram design quality.

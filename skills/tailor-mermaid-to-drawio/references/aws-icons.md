@@ -1,17 +1,24 @@
-# AWS icon path strategy (Draw.io)
+# AWS icons
 
-Use image-style nodes with paths under `img/lib/aws4/...` when available in the current Draw.io version.
+Search the connected Draw.io library for the exact service and use the returned
+AWS4 style. Prefer service/resource icons over generic cloud boxes. Preserve the
+service label even if a neutral fallback is necessary.
 
-Recommended categories:
-- Compute
-- Integration
-- Networking & Content Delivery
-- Database
-- Analytics
-- Security
+Useful search terms include `aws lambda`, `aws api gateway`, `aws ecs fargate`,
+`aws sqs`, `aws sns`, `aws s3`, `aws rds postgresql`, `aws aurora`, `aws dynamodb`,
+`aws secrets manager`, and `aws cloudwatch`. Select the result whose title
+matches the actual service, not just the first search hit.
 
-Guidelines:
-- Prefer official AWS4 icon paths over generic shapes.
-- Keep exact service name in node label even if icon fallback is required.
-- If a path is not available in the local build, use nearest AWS equivalent icon from same domain and preserve the service label.
-- Keep the same container/routing/layout rules as the Azure workflow.
+The library commonly returns `mxgraph.aws4.*` stencils or `img/lib/aws4/...`
+images. Do not construct a presumed image filename from the product name.
+
+- If explicitly named, use RDS PostgreSQL/MySQL, Aurora, or DocumentDB icons
+  rather than a plain engine logo. DocumentDB is not MongoDB itself.
+- Use an MSK icon only if the component is actually Amazon MSK. A `Kafka` label
+  alone does not imply MSK or justify Alibaba Cloud branding.
+- For plain PostgreSQL, MySQL, MongoDB, or Kafka, use their product/engine logos
+  per `third-party-icons.md`; neutral symbols are the honest fallback.
+- VPC, subnet, region, and availability-zone containers must match the supplied
+  topology. Do not add them merely to make the drawing look more sophisticated.
+
+Use the shared card, container, and routing rules in `visual-standard.md`.

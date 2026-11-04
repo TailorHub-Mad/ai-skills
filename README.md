@@ -131,5 +131,25 @@ When using `--target all` (or no `--target`), one or more targets may fail while
 |-------|-------------|
 | `code-review-router` | Routes code-review requests to a repo-specific review skill when available, with fallback to `tailor-code-review`. |
 | `tailor-code-review` | Agnostic code review for the current git branch. Detects bugs, security vulnerabilities, and critical issues. |
-| `tailor-mermaid-to-drawio` | Converts Mermaid architecture diagrams into polished Draw.io XML using Azure/AWS icon libraries and enterprise layout conventions. |
+| `tailor-mermaid-to-drawio` | Creates and improves editable Draw.io diagrams from prose, Mermaid, or existing files, with accurate cloud/third-party icons, clean routing, and a visual quality pass. |
 | `grill-me` | Structured interview mode that walks every branch of a technical decision tree until reaching shared understanding. |
+
+### Draw.io quality standard
+
+`tailor-mermaid-to-drawio` also handles requests such as "hazme un diagrama de
+esta arquitectura" or "mejora este Draw.io, sin líneas superpuestas". It bundles
+a reusable visual standard, an editable architecture starter, icon-selection
+guidance, a read-only XML/geometry checker, and evaluation prompts. Mermaid is
+optional; an explicitly requested Mermaid-only output is still respected.
+
+The default is rounded icon-and-label cards, soft responsibility/trust-boundary
+containers, restrained colors, readable typography, and unambiguous connectors.
+Draw.io MCP can supply icon search and obstacle-avoiding routing when available.
+Rendered visual verification is reported separately from structural validation.
+
+To check the bundled starter and checker without extra Python packages:
+
+```sh
+python3 skills/tailor-mermaid-to-drawio/scripts/check_drawio.py skills/tailor-mermaid-to-drawio/assets/architecture-starter.drawio
+python3 -B -m unittest discover -s skills/tailor-mermaid-to-drawio/scripts -p 'test_*.py'
+```
